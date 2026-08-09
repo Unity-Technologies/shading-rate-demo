@@ -1,0 +1,13 @@
+# Blender 4.5.1 LTS MTL File: 'lod.blend'
+# www.blender.org
+
+newmtl Daisy_Blossom
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Daisy_Blossom_baseColor.png
+map_Ke Daisy_Blossom_emissive.png
+map_Bump -bm 1.000000 Daisy_Blossom_normal.png

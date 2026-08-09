@@ -1,0 +1,110 @@
+#pragma kernel ComputeCulling
+#pragma kernel ComputeDeform
+
+// Per-clump GPU work only. Clump geometry is baked offline into GrassClumpAsset SOs, and instance
+// positions are baked on the CPU from the foliage masks (already terrain-conformed, world-space).
+// This compute just decides, per clump, whether it's visible (ring around the ball) and routes it
+// to one of two LOD append buffers by distance. Dispatched once PER foliage layer by the feature,
+// binding that layer's positions + its two culled buffers + its lodDistance.
+
+StructuredBuffer<float4> positionsBuffer;   // world x,y,z + yaw (w); Y already conformed at bake
+
+// Two append buffers: near (dense) and far (sparse) LOD for the layer being culled this dispatch.
+AppendStructuredBuffer<float4> culledPositions0;
+AppendStructuredBuffer<float4> culledPositions1;
+
+uint numInstances;     // count in positionsBuffer for this layer
+float3 cullOrigin;     // camera world position (ring center + LOD distance origin)
+float cullRadius;      // draw ring (meters); clumps beyond are culled
+uint cullEnabled;      // 1 = ring cull, 0 = draw every clump (LOD still by distance)
+float lodDistance;     // near -> far LOD boundary (meters) for this layer
+float lodBlend;        // width (meters) of the LOD cross-fade band (0 = hard switch)
+float deformCull;      // >0: drop instances where the trail exceeds this (Remove layers). Culling
+                       // them here rather than clipping in the fragment shader means a trampled
+                       // flower costs nothing at all while it's gone.
+float4 frustumPlanes[6]; // camera frustum planes (inward normals: xyz=n, w=d); GPU frustum cull
+float frustumPadding;    // keep clumps within this many meters of the frustum (avoids edge pop)
+
+// Persistent deformation "trail" texture (top-down over the field): accumulates where the
+// repulsor passes and decays back to 0 each frame (regrow).
+RWTexture2D<float> deformTex;
+uint deformRes;
+float deformDecay;     // amount subtracted per frame (dt / clearTime)
+// Up to 8 stampers (xyz = world position, w = radius; radius 0 = unused slot). One per wheel gives
+// one track per wheel — same-side front and rear follow the same line, so four wheels read as two
+// tracks rather than the single wide smear a body-centered stamper leaves.
+#define MAX_REPULSORS 8
+float4 repulsorPositions[MAX_REPULSORS];
+uint repulsorCount;
+float terrainSize;     // field extent (meters) for the deform texel->world mapping
+float2 fieldOrigin;    // world-space XZ center of the field (GrasslandVolume transform)
+
+[numthreads(64, 1, 1)]
+// once per clump: ring-cull vs the ball, then route to the near/far LOD append buffer by distance.
+void ComputeCulling(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= numInstances) return;
+
+    float4 pos = positionsBuffer[id.x];   // world position, already terrain-conformed at bake
+
+    // Remove layers: drop anything the trail has run over. The trail decays every frame, so an
+    // instance reappears on its own once its texel falls back under the threshold — no respawn
+    // bookkeeping, and the placement bake is never touched.
+    if (deformCull > 0.0)
+    {
+        float2 duv = saturate((pos.xz - fieldOrigin) / terrainSize + 0.5);
+        uint2 texel = min((uint2)(duv * (float)deformRes), (uint2)(deformRes - 1));
+        if (deformTex[texel] >= deformCull) return;
+    }
+
+    float2 d = pos.xz - cullOrigin.xz;
+    float distSq = dot(d, d);
+
+    // Visibility: distance ring around the camera AND view-frustum test (both gated by cullEnabled).
+    bool visible = (cullEnabled == 0);
+    if (!visible)
+    {
+        visible = distSq < cullRadius * cullRadius;
+        [unroll]
+        for (int p = 0; p < 6; p++)
+            if (dot(frustumPlanes[p].xyz, pos.xyz) + frustumPlanes[p].w < -frustumPadding)
+                visible = false;   // outside this plane (with padding) => culled
+    }
+
+    if (visible)
+    {
+        // Screen-door LOD cross-fade: within a band (lodBlend wide) around the boundary the clump is
+        // emitted to BOTH LODs; the shader dithers them complementarily so there's no hard ring.
+        // Outside the band it goes to a single LOD. lodBlend == 0 => hard switch.
+        float dist = sqrt(distSq);
+        float hb = lodBlend * 0.5;
+        if (dist < lodDistance - hb)        culledPositions0.Append(pos);
+        else if (dist < lodDistance + hb) { culledPositions0.Append(pos); culledPositions1.Append(pos); }
+        else                                culledPositions1.Append(pos);
+    }
+}
+
+[numthreads(8, 8, 1)]
+// once per trail texel: decay toward 0 (regrow), then stamp the repulsor footprint.
+void ComputeDeform(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= deformRes || id.y >= deformRes) return;
+
+    float d = max(0.0, deformTex[id.xy] - deformDecay);
+
+    // Texel -> field-local world XZ (uv over [-terrainSize/2, terrainSize/2] centered on origin),
+    // offset to world by the field origin.
+    float2 uv = (float2(id.xy) + 0.5) / float(deformRes);
+    float2 worldXZ = (uv - 0.5) * terrainSize + fieldOrigin;
+
+    for (uint i = 0; i < repulsorCount; i++)
+    {
+        float radius = repulsorPositions[i].w;
+        if (radius <= 0.0001) continue;
+        float dist = length(worldXZ - repulsorPositions[i].xz);
+        if (dist < radius)
+            d = max(d, 1.0 - smoothstep(0.0, radius, dist));
+    }
+
+    deformTex[id.xy] = d;
+}

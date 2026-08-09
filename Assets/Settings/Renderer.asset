@@ -55,9 +55,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87e97f534b7b5499ea80623ea9de3937, type: 3}
   m_Name: VolumetricFogRendererFeature
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   m_Material: {fileID: 2100000, guid: 1a885bc3aa7e3f44ab4124e2c90f44b2, type: 2}
-  m_ApplyVRS: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -83,13 +82,16 @@ MonoBehaviour:
     probeSamplingDebugTexture: {fileID: 2800000, guid: 24ec0e140fb444a44ab96ee80844e18e, type: 3}
     probeVolumeBlendStatesCS: {fileID: 7200000, guid: b9a23f869c4fd45f19c5ada54dd82176, type: 3}
   m_RendererFeatures:
-  - {fileID: 7344091534534529359}
   - {fileID: -2210015106235046479}
+  - {fileID: 3141592653589793238}
   m_RendererFeatureMap: 4f51e2095774eb65b1e59c54f87254e1
   m_UseNativeRenderPass: 1
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
-  m_AssetVersion: 2
+  m_AssetVersion: 3
+  m_PrepassLayerMask:
+    serializedVersion: 2
+    m_Bits: 127
   m_OpaqueLayerMask:
     serializedVersion: 2
     m_Bits: 127
@@ -105,12 +107,26 @@ MonoBehaviour:
     zFailOperation: 0
   m_ShadowTransparentReceive: 1
   m_RenderingMode: 2
-  m_DepthPrimingMode: 2
-  m_CopyDepthMode: 2
+  m_DepthPrimingMode: 1
+  m_CopyDepthMode: 0
   m_DepthAttachmentFormat: 0
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &3141592653589793238
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d50b3d38e00e9844b68bd919473cab3, type: 3}
+  m_Name: ProceduralRenderingFeature
+  m_EditorClassIdentifier: 
+  m_Active: 1
+  material: {fileID: 2100000, guid: 37232c80c4211a34d8ec9a528f03bce2, type: 2}
 --- !u!114 &4215337533229601556
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -127,21 +143,6 @@ MonoBehaviour:
   m_InjectionPoint: 200
   m_DebugVRS: 1
   m_Backend: 256
---- !u!114 &7344091534534529359
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 707e79eb3cb39c54b925f7bbb3eb1872, type: 3}
-  m_Name: ShadingRateFeature
-  m_EditorClassIdentifier: 
-  m_Active: 1
-  m_InjectionPoint: 200
-  m_DebugVRS: 1
 --- !u!114 &8865109761368418803
 MonoBehaviour:
   m_ObjectHideFlags: 0

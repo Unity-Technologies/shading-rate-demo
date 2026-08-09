@@ -1,0 +1,57 @@
+# Blender 4.5.1 LTS MTL File: 'None'
+# www.blender.org
+
+newmtl Body
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Body_baseColor.png
+map_Bump -bm 1.000000 Body_normal.png
+
+newmtl Engine
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Engine_baseColor.png
+map_Bump -bm 1.000000 Engine_normal.png
+
+newmtl Frame
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Frame_baseColor.png
+map_Bump -bm 1.000000 Frame_normal.png
+
+newmtl Glass
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd Glass_baseColor.png
+map_d Glass_baseColor.png
+map_Bump -bm 1.000000 Glass_normal.png
+
+newmtl Wheel
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Wheel_baseColor.png
+map_Bump -bm 1.000000 Wheel_normal.png

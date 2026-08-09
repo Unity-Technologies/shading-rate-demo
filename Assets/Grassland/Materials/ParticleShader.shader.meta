@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 33cf5e9f5653d8a4ca60402ad7e2937d
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _Colormap: {instanceID: 0}
+  - _Smoothmap: {instanceID: 0}
+  - _Normalmap: {instanceID: 0}
+  - _Noisemap: {instanceID: 0}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

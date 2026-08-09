@@ -10,6 +10,9 @@ public class CarController : MonoBehaviour
 
     public float suspensionLength;
     public float suspensionStrength;
+    [Tooltip("Shock absorber: damping applied against the wheel's vertical velocity. Without this the " +
+             "spring is undamped and the car bounces higher on each bump until it launches. Try ~2-5.")]
+    public float suspensionDamping = 3.0f;
 
     public float gripAmmount;
 
@@ -23,6 +26,7 @@ public class CarController : MonoBehaviour
     //private float steeringAngle;
 
     private Rigidbody m_RB;
+    private readonly RaycastHit[] _rayHits = new RaycastHit[8];
 
     private float currentSteeringAngle;
     private float targetSteeringAngle;
@@ -32,6 +36,26 @@ public class CarController : MonoBehaviour
     void Start()
     {
         m_RB = GetComponent<Rigidbody>();
+    }
+
+    // Downward suspension probe that ignores the car's OWN colliders. The raw Physics.Raycast has no
+    // layer mask, so without this it can hit the car body/capsule just below a wheel and return a
+    // bogus contact (bad normal/point) that destabilizes the car and can drop it through the ground.
+    // Returns the nearest hit that does NOT belong to this car. Allocation-free (RaycastNonAlloc).
+    private bool GroundRay(Transform suspensionTransform, out RaycastHit hit)
+    {
+        hit = default;
+        int n = Physics.RaycastNonAlloc(suspensionTransform.position, -suspensionTransform.up, _rayHits, suspensionLength);
+        float best = float.MaxValue;
+        bool found = false;
+        for (int i = 0; i < n; i++)
+        {
+            RaycastHit h = _rayHits[i];
+            if (h.rigidbody == m_RB) continue;                                        // our own rigidbody
+            if (h.collider != null && h.collider.transform.IsChildOf(transform)) continue; // any collider on the car
+            if (h.distance < best) { best = h.distance; hit = h; found = true; }
+        }
+        return found;
     }
 
     // Update is called once per frame
@@ -85,7 +109,7 @@ public class CarController : MonoBehaviour
     private void DebugSuspension(Transform suspensionTransform)
     {
         RaycastHit hit;
-        if (Physics.Raycast(suspensionTransform.position, -suspensionTransform.up, out hit, suspensionLength))
+        if (GroundRay(suspensionTransform, out hit))
         {
             Vector3 roadForward = Vector3.ProjectOnPlane(suspensionTransform.forward, hit.normal).normalized;
             Vector3 roadNormal = hit.normal;
@@ -127,7 +151,7 @@ public class CarController : MonoBehaviour
     private void ApplySuspension(Transform suspensionTransform, float drive)
     {
         RaycastHit hit;
-        if (Physics.Raycast(suspensionTransform.position, -suspensionTransform.up, out hit, suspensionLength))
+        if (GroundRay(suspensionTransform, out hit))
         {
             Vector3 roadForward = Vector3.ProjectOnPlane(suspensionTransform.forward, hit.normal).normalized;
             Vector3 roadNormal = hit.normal;
@@ -156,8 +180,11 @@ public class CarController : MonoBehaviour
             
             
             float compression = GetSpringCompression(suspensionTransform.position, hit.point);
-            float forceStrength = compression * suspensionStrength;
-            
+            // Spring pushes up by compression; damper resists the wheel's vertical velocity so bumps
+            // don't pump energy into the car (the missing shock absorber that made it launch/fall).
+            float springVel = Vector3.Dot(suspensionTransform.up, m_RB.GetPointVelocity(suspensionTransform.position));
+            float forceStrength = compression * suspensionStrength - springVel * suspensionDamping;
+
             m_RB.AddForceAtPosition(suspensionTransform.up * forceStrength, suspensionTransform.position);
             
             
